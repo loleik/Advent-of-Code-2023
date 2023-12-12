@@ -3,4 +3,4 @@ My solutions for [Advent of Code 2023](https://adventofcode.com/2023) written in
 I do intend to go back and rewrite some days I'm particularly unhappy with, but it all works unless stated otherwise.
 
 ## Notes
-+ Day 12 does not work. It has issues with how to handle future '?' occurences when looking to see if a hash has a valid group including it by looking forward. I just want a backup for when I inevitably rewrite it.
++ Day 12 part 2 is not complete. As of right now I don't see any way I can do it. I am trying to understand teh dynamic programming approach but I am making no progress at all.
