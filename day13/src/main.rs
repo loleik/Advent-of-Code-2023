@@ -38,7 +38,7 @@ fn parser(path: &str) -> Data {
     parsed
 }    
 
-fn check_horizontal(input: Vec<Vec<char>>, mut check: Vec<usize>, dots: i32) -> Vec<usize> {
+fn check_horizontal(input: Vec<Vec<char>>, mut check: Vec<usize>, dots: i32, p: i64) -> Vec<usize> {
     if check.len() == 0 { return vec![] }
 
     let index = check.remove(0);
@@ -61,10 +61,13 @@ fn check_horizontal(input: Vec<Vec<char>>, mut check: Vec<usize>, dots: i32) -> 
 
     if matches != 0 {
         let dots_before_index = dots as usize - check.len() - 1;
-        result.push(index - (dots_before_index) as usize)
+        result.push(index - (dots_before_index) as usize);
+        if result.iter().sum::<usize>() != p as usize {
+            return result
+        }
     }
 
-    let recursion = &check_horizontal(input.clone(), check, dots).to_owned();
+    let recursion = &check_horizontal(input.clone(), check, dots, p).to_owned();
     if recursion.len() > 0 { result.push(recursion[0]) }
 
     result
@@ -101,12 +104,10 @@ fn insert_dots(input: Vec<Vec<char>>) -> (Vec<Vec<char>>, Vec<usize>, i32) {
     (result, check, dots)
 }
 
-fn part_1(data: Data) -> (i64, HashMap<usize, i64>) {
+fn part_1(data: Data) -> (i64, HashMap<usize, (i64, usize, usize)>) {
     let mut results = HashMap::new();
     let s = data.seperators;
     let mut result = 0;
-    let mut hori = false;
-    let mut vert = false;
 
     for i in 0..(s.len()-1) {
         let current = data.strings[s[i]+1..s[i+1]].to_vec();
@@ -115,35 +116,36 @@ fn part_1(data: Data) -> (i64, HashMap<usize, i64>) {
         let check_hor = horizontal.1;
         let dots_hor = horizontal.2;
 
-        let horizontal_total = check_horizontal(current_hor.clone(), check_hor, dots_hor);
+        let horizontal_total = check_horizontal(current_hor.clone(), check_hor, dots_hor, 0);
 
         let vertical = insert_dots(transpose(current));
         let current_ver = vertical.0;
         let check_ver = vertical.1;
         let dots_ver = vertical.2;
 
-        let vertical_total = check_horizontal(current_ver, check_ver, dots_ver);
+        let vertical_total = check_horizontal(current_ver, check_ver, dots_ver, 0);
 
         let total = (100*horizontal_total.iter().sum::<usize>() + vertical_total.iter().sum::<usize>()) as i64;
         
-        results.insert(i, total);
+        results.insert(i, (total,horizontal_total.iter().sum::<usize>(),vertical_total.iter().sum::<usize>()));
         
         result += total;
     }
     (result, results)
 }
 
-fn part_2(data: Data, results: HashMap<usize, i64>) {
+fn part_2(data: Data, results: HashMap<usize, (i64, usize, usize)>) {
     let s = data.seperators;
     let mut values = vec![];
 
     for i in 0..(s.len()-1) {
         let current = data.strings[s[i]+1..s[i+1]].to_vec();
-        let mut passed = false;            
+        let mut passed = false;
         
         for j in 0..current.len() {
             for k in 0..current[0].len() {
                 let mut new_current = current.clone();
+                let prev = results.get(&i).unwrap().to_owned();
 
                 match current[j][k] {
                     '.' => new_current[j][k] = '#',
@@ -156,34 +158,44 @@ fn part_2(data: Data, results: HashMap<usize, i64>) {
                 let check_hor = horizontal.1;
                 let dots_hor = horizontal.2;
 
-                let horizontal_total = check_horizontal(current_hor.clone(), check_hor, dots_hor);
+                let mut horizontal_total =
+                    check_horizontal(current_hor.clone(), check_hor, dots_hor, prev.1 as i64);
 
                 let vertical = insert_dots(transpose(new_current));
                 let current_ver = vertical.0;
                 let check_ver = vertical.1;
                 let dots_ver = vertical.2;
 
-                let vertical_total = check_horizontal(current_ver, check_ver, dots_ver);
+                let mut vertical_total =
+                    check_horizontal(current_ver, check_ver, dots_ver, prev.2 as i64);
+
+                if vertical_total.iter().sum::<usize>() == prev.2 &&
+                   horizontal_total.iter().sum::<usize>() > 0 {
+                    vertical_total = vec![]
+                }
+
+                if horizontal_total.iter().sum::<usize>() == prev.1 &&
+                   vertical_total.iter().sum::<usize>() > 0 {
+                    horizontal_total = vec![]
+                }
+
+                if horizontal_total.iter().sum::<usize>() != 0 && vertical_total.iter().sum::<usize>() != 0 {
+                    println!("{:?} {:?}", horizontal_total,vertical_total);
+                    println!("{}",100*horizontal_total.iter().sum::<usize>());
+                    println!("{} {}", j, k);
+                    println!("{} {}", prev.1, prev.2);
+                    println!("{}", prev.1 == horizontal_total.iter().sum::<usize>())
+                }
                 
                 let r = (100*horizontal_total.iter().sum::<usize>() +
                          vertical_total.iter().sum::<usize>()) as i64;
-                
-                if results.get(&i).unwrap().to_owned() != r && r != 0 {
-                    if results.get(&i).unwrap().to_owned() < r {
-                        values.push(r - results.get(&i).unwrap().to_owned());
-                        passed = true;
-                        break;
-                    } else {
-                        values.push(results.get(&i).unwrap().to_owned() - r);
-                        passed = true;
-                        break;
-                    }
+                if prev.0 != r && r != 0 /*&& !(vertical_total.len() != 0 && horizontal_total.len() != 0)*/ {
+                    values.push(r);
+                    passed = true;
+                    break;
                 }
             }
             if passed == true { break; }
-        }
-        if passed == false {
-            values.push(results.get(&i).unwrap().to_owned())
         }
     }
     println!("{:?},{}", values, values.iter().sum::<i64>())
