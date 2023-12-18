@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::{prelude::*, BufReader};
-use std::collections::HashMap;
+use std::collections::{HashMap, BTreeMap};
 
 fn parser(path: &str) -> Vec<Vec<char>> {
     let file = match File::open(path) {
@@ -36,8 +36,8 @@ fn hash(input: &[char]) -> u32 {
 fn main() {
     let data = parser("./input");
     let mut part_1 = 0;
-    let mut boxes: HashMap<u32, Vec<String>> = HashMap::new();
-    let mut lenses: HashMap<String, (u32, u32, u32)> = HashMap::new();
+    let mut boxes: BTreeMap<u32, Vec<String>> = BTreeMap::new();
+    let mut lenses: BTreeMap<String, (u32, u32, u32)> = BTreeMap::new();
     
     for d in &data { part_1 += hash(&d) }
     println!("Part 1: {part_1}");
@@ -81,7 +81,7 @@ fn main() {
         }
     }
     
-    let mut total = 0;
+    let mut total: u64 = 0;
     
     for (k, values) in lenses.clone() {
         let mut slot = 0;
@@ -91,7 +91,7 @@ fn main() {
             }
         };
 
-        total += values.0 * slot * values.2;
+        total += (values.0 * slot * values.2) as u64;
     }
     
     println!("{total}")
