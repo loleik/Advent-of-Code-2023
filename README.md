@@ -4,4 +4,4 @@ I do intend to go back and rewrite some days I'm particularly unhappy with, but 
 
 ## Notes
 + Part 2 of days 12, 13, 15, and 19 are not completed.
-+ Neither part of day 17 is complete.
++ Neither part of days 17 or 20 are complete.
