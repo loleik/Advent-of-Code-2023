@@ -1,22 +1,10 @@
 use std::fs::File;
 use std::io::{prelude::*, BufReader};
 use regex::Regex;
-use std::collections::HashMap;
+use std::cmp::{max, min};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 struct Coords { x: i32, y: i32, z: i32 }
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-struct Key {
-    first: Coords,
-    second: Coords,
-}
-
-impl Key {
-    fn new(first: Coords, second: Coords) -> Self {
-        Key { first, second }
-    }
-}
 
 impl Coords {
     fn diff(self, other: Coords) -> Option<& 'static str> {
@@ -58,71 +46,39 @@ fn parser(path: &str) -> Vec<Vec<Coords>> {
         }
     });
 
-    out.sort_by(|a, b| a[0].z.cmp(&b[0].z));    
+    out.sort_by(|a, b| b[0].z.cmp(&a[0].z));    
     out
 }
 
-// Same as 20 and 21, this has confused me too much. Maybe it could work but I can't continue.
+fn overlap(v: &[Coords], w: &[Coords]) -> bool {
+    (max(v[0].x, w[0].x) <= min(v[1].x, w[1].x)) &&
+    (min(v[0].y, w[0].y) <= max(v[1].y, w[1].y))
+}
+
+fn deep_copy(v: &[Vec<Coords>]) -> Vec<Vec<Coords>> {
+    v.iter().map(|inner| inner.iter().cloned().collect()).collect()
+}
+
 fn part_1(input: &[Vec<Coords>]) {
-    let mut free = 0;
-    let mut supports: HashMap<Key, Vec<(Coords, Coords)>> = HashMap::new();
-    let mut supporting: HashMap<Key, Vec<(Coords, Coords)>> = HashMap::new();
+    let mut copy = deep_copy(input);
 
     for (i, v) in input.iter().enumerate() {
-        let d = v[0].diff(v[1]).unwrap_or("Error finding differences");
-
+        let mut floor = 1;
         for (j, w) in input.iter().enumerate().skip(i+1) {
-            match d {
-                "x" => {
-                    if ((v[0].x <= w[0].x && w[0].x <= v[1].x) ||
-                       (v[0].x <= w[1].x && w[1].x <= v[1].x)) &&
-                       ((w[0].y <= v[0].y && v[0].y <= w[1].y) ||
-                       (w[0].y <= v[1].y && v[1].y <= w[1].y)) {
-                        let entry1 = supports.entry(Key::new(w[0],w[1])).or_insert(vec![]);
-                        entry1.push((v[0], v[1]));               
-                        let entry2 = supporting.entry(Key::new(v[0],v[1])).or_insert(vec![]);     
-                        entry2.push((w[0], w[1]));
-                    } else { continue }
-                },
-                "y" => {
-                    if ((v[0].y <= w[0].y && w[0].y <= v[1].y) ||
-                       (v[0].y <= w[1].y && w[1].y <= v[1].y)) &&
-                       ((w[0].x <= v[0].x && v[0].x <= w[1].x) ||
-                       (w[0].x <= v[1].x && v[1].x <= w[1].x)) {
-                        let entry = supports.entry(Key::new(w[0],w[1])).or_insert(vec![]);
-                        entry.push((v[0], v[1]));                 
-                        let entry2 = supporting.entry(Key::new(v[0],v[1])).or_insert(vec![]);     
-                        entry2.push((w[0], w[1]));
-                    } else { continue }
-                },
-                "z" => {
-                    if v[0].x == w[0].x || v[0].x == w[1].x ||
-                       v[1].x == w[0].x || v[1].x == w[1].x {
-                        let entry = supports.entry(Key::new(w[0],w[1])).or_insert(vec![]);
-                        entry.push((v[0], v[1]));                 
-                        let entry2 = supporting.entry(Key::new(v[0],v[1])).or_insert(vec![]);     
-                        entry2.push((w[0], w[1]));
-                    } else if v[0].y == w[0].y || v[0].y == w[1].y ||
-                              v[1].y == w[0].y || v[1].y == w[1].y {
-                        let entry = supports.entry(Key::new(w[0],w[1])).or_insert(vec![]);
-                        entry.push((v[0], v[1]));                 
-                        let entry2 = supporting.entry(Key::new(v[0],v[1])).or_insert(vec![]);     
-                        entry2.push((w[0], w[1]));
-                    } else { continue }
-                },
-                _ => continue
+            if overlap(v, w) == true {
+                floor = max(w[0].z + 1, floor);
             }
         }
+        //println!("Before Modification - copy[{}]: {:?}", i, copy[i]);
+        //println!("{floor}");
+        copy[i][1].z -= copy[i][0].z - floor;
+        copy[i][0].z = floor;
+        //println!("After Modification - copy[{}]: {:?}", i, copy[i]);
     }
 
-    for (key, val) in supporting.iter() {
-        println!("{:?} : {:?}", key, val);
-        if val.len() == 0 {
-            free += 1;
-        }
-    }
+    copy.sort_by(|a, b| a[0].z.cmp(&b[0].z));
 
-    println!("{}", free)
+    for c in &copy { println!("{:?}", c) }
 }
 
 fn main() {
