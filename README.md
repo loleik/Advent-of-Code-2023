@@ -5,3 +5,5 @@ I do intend to go back and rewrite some days I'm particularly unhappy with, but 
 ## Notes
 + Part 2 of days 12, 13, 15, and 19 are not completed.
 + Neither part of days 17, 20, 21, 22, 23, and 24 are complete.
+
+I will go back and finish them.
